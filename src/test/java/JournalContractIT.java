@@ -1,4 +1,5 @@
 import io.reactivex.subscribers.TestSubscriber;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -18,6 +19,8 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.Assert.assertTrue;
 
 @Testcontainers
 public class JournalContractIT {
@@ -46,12 +49,16 @@ public class JournalContractIT {
         secondaryAccount = accounts.get(1);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testJournal() throws Exception {
         String txHash = contract.insertNote("some_title", "some content..", Collections.singletonList(secondaryAccount), Arrays.asList("#new", "#test")).send().getTransactionHash();
         TransactionReceipt receipt = web3j.ethGetTransactionReceipt(txHash).send().getTransactionReceipt().get();
         List<Journal.NoteInsertedEventResponse> notes = contract.getNoteInsertedEvents(receipt);
-        System.out.println(notes);
+        notes.stream().flatMap(x -> x.taggedMembers.stream())
+                .forEach(x -> assertTrue(x instanceof String) );
+        notes.stream().flatMap(x -> x.tags.stream())
+                .forEach(x -> assertTrue(x instanceof String) );
     }
 
 }
